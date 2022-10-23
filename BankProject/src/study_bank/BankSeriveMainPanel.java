@@ -40,28 +40,26 @@ public class BankSeriveMainPanel extends Frame implements ActionListener, Runnab
 	DespoitDialog Despoist_da;
 	OutputDialog Output_da;
 	Bankinfo info;
-
-	int countNumber = 10000;
+	int hour = 1;
+	int minute = 0;
+	int second = 1;
+	int count = 0;
 
 	BankSeriveMainPanel(LogInEX login) {
 		log = login;
 		sv = new Bankservice();
-		la_count = new Label(String.valueOf(countNumber) + "초");
+		la_count = new Label(String.valueOf(hour + ":" + minute + ":0" + second) + "초");
 //		extension = new JButton("연장");
 		lo_Da = new LogoutDialog(log, this);
-		
-		
+
 		pa = new Panel();
 		pa2 = new Panel();
 		gap1 = new Label("");
 		gap2 = new Label("");
 		input = new JButton("입금");
 		output = new JButton("송금(출금)");
-//		balance = new JButton("잔고");
-//		withdraw = new JButton("탈퇴");
 		logout = new JButton("로그아웃");
 		showInfo = new JButton("정보보기(현재 잔고 포함)");
-		exit = new JButton("프로그램 종료");
 		Userinfo = new Label();
 
 		add(pa, "North");
@@ -70,27 +68,24 @@ public class BankSeriveMainPanel extends Frame implements ActionListener, Runnab
 
 		pa.add(Userinfo);
 		pa.add(la_count);
-//		pa.add(gap1);
-//		pa.add(gap2);
 //		pa.add(extension);
 
 		pa2.add(input);
 		pa2.add(output);
-//		pa2.add(balance);
-		pa2.add(exit);
+
 		pa2.add(showInfo);
 		pa2.add(logout);
+		pa2.add(new Label());
+		pa2.add(new Label());
 
 		input.addActionListener(this);
 		output.addActionListener(this);
-//		balance.addActionListener(this);
-		exit.addActionListener(this);
 		showInfo.addActionListener(this);
 		logout.addActionListener(this);
 //		extension.addActionListener(this);
 
 //		pa.setLayout(new GridLayout(2, 2));
-		pa2.setLayout(new GridLayout(4, 2));
+		pa2.setLayout(new GridLayout(3, 2));
 		setSize(400, 400);
 		setVisible(false);
 		addWindowListener(new WindowAdapter() {
@@ -133,15 +128,14 @@ public class BankSeriveMainPanel extends Frame implements ActionListener, Runnab
 					Output_da.setVisible(true);
 				}
 			} else if ("정보보기(현재 잔고 포함)" == button.getLabel()) {
+				info.personUpdate(sv.onePerson(person.getId()));
 				info.setVisible(true);
 
 			} else if ("로그아웃" == button.getLabel()) {
 				lo_Da.setVisible(true);
 				setVisible(false);
-			} else if ("프로그램 종료" == button.getLabel()) {
-
 			} else if ("연장" == button.getLabel()) {
-
+				
 			}
 
 		}
@@ -156,11 +150,33 @@ public class BankSeriveMainPanel extends Frame implements ActionListener, Runnab
 	public void run() {
 
 		try {
-			for (int i = 0; i < 10000; i++) {
+			for (count = 0; count < 3600; count++) {
 				Thread.sleep(1000);
-				la_count.setText("\t" + String.valueOf(--countNumber) + "초");
+				if (hour == 1) {
+					--hour;
+				}
+				--second;
+				if (second == 0 && minute == 0 && hour == 0) {
+//		               --hour;
+					hour = 0;
+					minute = 59;
+					second = 60;
+				}
+				if (second == 0) {
+					--minute;
+					second = 60;
+				}
+
+				if (second > 10) {
+					la_count.setText("\t" + String.valueOf(hour + ":" + minute + ":" + second) + "초");
+				} else {
+					la_count.setText("\t" + String.valueOf(hour + ":" + minute + ":0" + second) + "초");
+				}
 			}
-			JOptionPane.showMessageDialog(null, "100초 동안 로그인을 하지않아서 로그아웃처리 되었습니다.");
+		
+
+			JOptionPane.showMessageDialog(null, "60분 동안 로그인을 하지않아서 로그아웃처리 되었습니다.");
+
 			setVisible(false);
 			log.setVisible(true);
 		} catch (InterruptedException e) {
@@ -185,6 +201,10 @@ class Bankinfo extends Dialog implements ActionListener {
 	Panel p1, p2, p3;
 	BankPerson loginInfoPerson;
 	Choice AccountChoice;
+	
+	public BankPerson personUpdate(BankPerson update){
+		return loginInfoPerson=update;
+	}
 
 	Bankinfo(BankSeriveMainPanel sp, BankPerson person) {
 		super(sp);
@@ -192,7 +212,7 @@ class Bankinfo extends Dialog implements ActionListener {
 		this.loginInfoPerson = person;
 
 		sv = new Bankservice();
-		log=new LogInEX();
+		log = new LogInEX();
 		log.setVisible(false);
 
 		p1 = new Panel(new GridLayout(2, 1));
@@ -218,16 +238,15 @@ class Bankinfo extends Dialog implements ActionListener {
 		p2.add(new Label("핸드폰 번호"));
 		p2.add(new Label(loginInfoPerson.getPhoneNumber()));
 		p2.add(new Label("계좌번호"));
-		if(!loginInfoPerson.getAccountNumber().equals("1")) {
-		p2.add(new Label(loginInfoPerson.getAccountNumber()));
-		}else {
+		if (!loginInfoPerson.getAccountNumber().equals("1")) {
+			p2.add(new Label(loginInfoPerson.getAccountNumber()));
+		} else {
 			p2.add(new Label("현재 개설된 계좌가 없습니다."));
 		}
 		p2.add(new Label("잔고 금액"));
-		if(!loginInfoPerson.getAccountNumber().equals("1")&&
-			loginInfoPerson.getMoney()!=0) {
-		p2.add(new Label(String.valueOf(loginInfoPerson.getMoney())));
-		}else {
+		if (!loginInfoPerson.getAccountNumber().equals("1")) {
+			p2.add(new Label(String.valueOf(loginInfoPerson.getMoney())));
+		} else {
 			p2.add(new Label("-"));
 		}
 		p2.add(new Label(""));
@@ -275,7 +294,6 @@ class Bankinfo extends Dialog implements ActionListener {
 						System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
 						JOptionPane.showMessageDialog(null, "성공적으로 탈퇴되었습니다.");
 
-						
 					} catch (Exception e2) {
 						// TODO: handle exception
 						e2.printStackTrace();
@@ -286,8 +304,8 @@ class Bankinfo extends Dialog implements ActionListener {
 						try {
 							if (leavePerson != null)
 								leavePerson.close();
-							if (C_InfoPerson != null)
-								C_InfoPerson.close();
+//							if (C_InfoPerson != null)
+//								C_InfoPerson.close();
 						} catch (Exception e3) {
 							// TODO: handle exception
 							e3.printStackTrace();
@@ -512,8 +530,8 @@ class MakeAccountDialog extends Dialog implements ActionListener {
 									try {
 										if (Pre_makeAcconut != null)
 											Pre_makeAcconut.close();
-										if (C_makeAccount != null)
-											C_makeAccount.close();
+//										if (C_makeAccount != null)
+//											C_makeAccount.close();
 									} catch (Exception e3) {
 										// TODO: handle exception
 										e3.printStackTrace();
@@ -638,7 +656,8 @@ class DespoitDialog extends Dialog implements ActionListener {
 					Pre_result = Pre_person.executeUpdate();
 					pre_massage = Pre_result > -1 ? "계좌 연동성공" : "계좌 연동실패";
 					System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
-
+					
+					tf_mokey.setText(" ");
 					setVisible(false);
 					sp.setVisible(true);
 				} catch (Exception e2) {
@@ -648,8 +667,8 @@ class DespoitDialog extends Dialog implements ActionListener {
 					try {
 						if (Pre_person != null)
 							Pre_person.close();
-						if (C_DespoitAccount != null)
-							C_DespoitAccount.close();
+//						if (C_DespoitAccount != null)
+//							C_DespoitAccount.close();
 					} catch (Exception e3) {
 						// TODO: handle exception
 						e3.printStackTrace();

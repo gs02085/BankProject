@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +39,6 @@ public class Bankservice {
 
 	}
 
-	
-	
-	
 	public List<BankPerson> callMember() { // db에서 정보를 가져와서 객체에 넣는 과정
 		Statement bankStatment = null;
 		ResultSet bankResultSet = null; // 회원정보에 대한 디비를 연결하는 객체
@@ -48,7 +46,7 @@ public class Bankservice {
 			String select = "select * from bankmember";
 			bankStatment = bankConnection.createStatement();
 			bankResultSet = bankStatment.executeQuery(select);
-			
+
 //			String select2="select AccountPassword form Account ";
 //			AccounResultset=bankStatment.executeQuery(select2);
 			while (bankResultSet.next()) {
@@ -58,8 +56,6 @@ public class Bankservice {
 						bankResultSet.getInt("AccountBalace"), bankResultSet.getInt("AccountPassword"),
 						bankResultSet.getTimestamp("Timejoin")));
 			}
-
-			
 
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -90,13 +86,13 @@ public class Bankservice {
 
 		try {
 
-			System.out.println("db연결성공");
+//			System.out.println("db연결성공");
 			st = bankConnection.createStatement();
 //			 String sql="create table BankMember (Name varchar(20),idCardNumber int,"
 //			 		+ "idvarchar(12),pw varchar(20),phoneNumber varchar(20),AccountNumber"
 //			        +"varchar(20),AccountBalace int,AccountPassword int,Timejoin DATETIME)";
-			String sql = "insert into BANKMEMBER (Name,id,pw,phoneNumber,timejoin,AccountNumber,AccountBalace) values ('" + name
-					+ "','" + id + "','" + pw + "','" + phoneNumber + "',now(),'1',0)";
+			String sql = "insert into BANKMEMBER (Name,id,pw,phoneNumber,timejoin,AccountNumber,AccountBalace) values ('"
+					+ name + "','" + id + "','" + pw + "','" + phoneNumber + "',now(),'1',0)";
 			int result = st.executeUpdate(sql);
 			String msg = result > -1 ? "성공" : "실패";
 			System.out.println("Bankeprson DB:" + msg);
@@ -119,6 +115,36 @@ public class Bankservice {
 
 	}
 //	----------------------------------------------------------
+
+	public BankPerson onePerson(String id) {
+		BankPerson Chooseperson = null;
+		Statement choose = null;
+		ResultSet chooseRS = null;
+		try {
+			choose = bankConnection.createStatement();
+			String sql = "select * from bankmember where id=" + id;
+			chooseRS = choose.executeQuery(sql);
+			if (chooseRS.next()) {
+				Chooseperson = new BankPerson(chooseRS.getString("name"), chooseRS.getNString("pw"),
+						chooseRS.getString("AccountNumber"), chooseRS.getDate("idCardNumber"),
+						chooseRS.getString("phonenumber"), chooseRS.getString("id"), chooseRS.getInt("AccountBalace"),
+						chooseRS.getInt("AccountPassword"), chooseRS.getTimestamp("Timejoin"));
+			}
+			return Chooseperson;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} finally {
+			try {
+				chooseRS.close();
+				choose.close();
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+		}
+
+	}
 
 	public BankPerson logIn1(String id, String password) {
 		BankPerson mm = null;
@@ -148,18 +174,18 @@ public class Bankservice {
 		int inputMoney = inputperson.getMoney();
 		int outblance = money - Integer.valueOf(balance);
 		int sumblance = Integer.valueOf(balance) + inputMoney;
-		boolean result=true;
-		
+		boolean result = true;
+
 		try {
 			if (inputperson.getId().equals(person.getId())) {
 				for (int j = 1; j <= 3; j++) { // 비밀번호 3회오류를 넣기위해 넣은 for문
 					String password = JOptionPane.showInputDialog(null, "비빌번호를 입력해주세요.");
 					int pw = Integer.valueOf(password);
 					if (pw == person.getBankPassword()) {
-						result=false;
-						String sql = "insert into Account(Id,name,AccountNumber,purpose,output,time) values(" 
-						        + "'"+ person.getId() + "','" + person.getName() + "',"
-								+ "'" + person.getAccountNumber()+ "','본인계좌출금','" + Integer.valueOf(balance) + "',now())";
+						result = false;
+						String sql = "insert into Account(Id,name,AccountNumber,purpose,output,time) values(" + "'"
+								+ person.getId() + "','" + person.getName() + "'," + "'" + person.getAccountNumber()
+								+ "','본인계좌출금','" + Integer.valueOf(balance) + "',now())";
 						Pre_DespoitAcconut = bankConnection.prepareStatement(sql);
 						int Pre_result = Pre_DespoitAcconut.executeUpdate();
 						String pre_massage = Pre_result > -1 ? " 계좌 연동성공" : "계좌 연동실패";
@@ -173,79 +199,77 @@ public class Bankservice {
 						System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
 						person.setMoney(outblance);
 						break;
-					} 
+					}
 				}
-				if(result) {
-						JOptionPane.showMessageDialog(null, "비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
-						System.out.println("비밀번호가 일치하지않습니다.");
+				if (result) {
+					JOptionPane.showMessageDialog(null, "비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
+					System.out.println("비밀번호가 일치하지않습니다.");
 				}
 				System.out.println(person.getName() + "님" + balance + "을 출금하였습니다");
 				System.out.println(person.getName() + "님의 남은 잔액은" + person.getMoney() + "입니다");
 			}
 
 			else {
-					for (int j = 1; j <= 3; j++) { // 비밀번호 3회오류를 넣기위해 넣은 for문
-						String password = JOptionPane.showInputDialog(null, "비빌번호를 입력해주세요.");
-						int pw = Integer.valueOf(password);
-						if (pw == person.getBankPassword()) {
-							String sql = "insert into Account(Id,name,AccountNumber,purpose,output,time) values(" + "'"
-									+ person.getId() + "','" + person.getName() + "'," + "'" + person.getAccountNumber()
-									+ "','"+inputperson.getName() +"에게 송금','" + Integer.valueOf(balance) + "'" + ",now())";
-							Pre_DespoitAcconut = bankConnection.prepareStatement(sql);
-							int Pre_result = Pre_DespoitAcconut.executeUpdate();
-							String pre_massage = Pre_result > -1 ? "송금 계좌 연동성공" : "송금 계좌 연동실패";
-							System.out.println("bakperson DB:\t" + pre_massage); // 사람관련 디비에 계좌번호를 연결하는 작업
-							
-							sql = "update bankmember set AccountBalace='" + outblance + "'" + " where id='" + person.getId()
-									+ "'";
-							Pre_person = bankConnection.prepareStatement(sql);
-							Pre_result = Pre_person.executeUpdate();
-							pre_massage = Pre_result > -1 ? "송금 사람 연동성공" : "송금 사람 연동실패";
-							System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
-							
-							
-							person.setMoney(outblance);
+				for (int j = 1; j <= 3; j++) { // 비밀번호 3회오류를 넣기위해 넣은 for문
+					String password = JOptionPane.showInputDialog(null, "비빌번호를 입력해주세요.");
+					int pw = Integer.valueOf(password);
+					if (pw == person.getBankPassword()) {
+						String sql = "insert into Account(Id,name,AccountNumber,purpose,output,time) values(" + "'"
+								+ person.getId() + "','" + person.getName() + "'," + "'" + person.getAccountNumber()
+								+ "','" + inputperson.getName() + "에게 송금','" + Integer.valueOf(balance) + "'"
+								+ ",now())";
+						Pre_DespoitAcconut = bankConnection.prepareStatement(sql);
+						int Pre_result = Pre_DespoitAcconut.executeUpdate();
+						String pre_massage = Pre_result > -1 ? "송금 계좌 연동성공" : "송금 계좌 연동실패";
+						System.out.println("bakperson DB:\t" + pre_massage); // 사람관련 디비에 계좌번호를 연결하는 작업
 
-							
-							//입금된 사람(돈들어온 사람)
-							sql = "insert into Account(Id,name,AccountNumber,purpose,input,time) values(" + "'"
-									+ inputperson.getId() + "','" + inputperson.getName() + "'," + "'" + inputperson.getAccountNumber()
-									+ "','"+person.getName()+"님에게 입금됨','" + Integer.valueOf(balance) + "'" + ",now())";
-							Pre_DespoitAcconut = bankConnection.prepareStatement(sql);
-							Pre_result = Pre_DespoitAcconut.executeUpdate();
-						   pre_massage = Pre_result > -1 ? " 입금 계좌 연동성공" : "입금 계좌 연동실패";
-							System.out.println("bakperson DB:\t" + pre_massage); // 사람관련 디비에 계좌번호를 연결하는 작업
+						sql = "update bankmember set AccountBalace='" + outblance + "'" + " where id='" + person.getId()
+								+ "'";
+						Pre_person = bankConnection.prepareStatement(sql);
+						Pre_result = Pre_person.executeUpdate();
+						pre_massage = Pre_result > -1 ? "송금 사람 연동성공" : "송금 사람 연동실패";
+						System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
 
-							sql = "update bankmember set AccountBalace='" + sumblance + "'" + " where id='" + inputperson.getId()
-									+ "'";
-							Pre_person = bankConnection.prepareStatement(sql);
-							Pre_result = Pre_person.executeUpdate();
-							pre_massage = Pre_result > -1 ? "입금 사람 연동성공" : "입금 사람 연동실패";
-							System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
-							
-							inputperson.setMoney(sumblance);
+						person.setMoney(outblance);
 
-							
-							break;
-						} else {
-							password = JOptionPane.showInputDialog(null, "비밀번호가 일치하지않습니다.");
-							System.out.println("비밀번호가 일치하지않습니다.");
-							if (j == 3) { // 3회 오류가 되면 뜨는 문구를 위한 if문
-								password = JOptionPane.showInputDialog(null, "비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
-								System.out.println("비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
-							}
+						// 입금된 사람(돈들어온 사람)
+						sql = "insert into Account(Id,name,AccountNumber,purpose,input,time) values(" + "'"
+								+ inputperson.getId() + "','" + inputperson.getName() + "'," + "'"
+								+ inputperson.getAccountNumber() + "','" + person.getName() + "님에게 입금됨','"
+								+ Integer.valueOf(balance) + "'" + ",now())";
+						Pre_DespoitAcconut = bankConnection.prepareStatement(sql);
+						Pre_result = Pre_DespoitAcconut.executeUpdate();
+						pre_massage = Pre_result > -1 ? " 입금 계좌 연동성공" : "입금 계좌 연동실패";
+						System.out.println("bakperson DB:\t" + pre_massage); // 사람관련 디비에 계좌번호를 연결하는 작업
+
+						sql = "update bankmember set AccountBalace='" + sumblance + "'" + " where id='"
+								+ inputperson.getId() + "'";
+						Pre_person = bankConnection.prepareStatement(sql);
+						Pre_result = Pre_person.executeUpdate();
+						pre_massage = Pre_result > -1 ? "입금 사람 연동성공" : "입금 사람 연동실패";
+						System.out.println("account DB:\t" + pre_massage); // 계좌번호 디비에 계좌번호를 연결하는 작업
+
+						inputperson.setMoney(sumblance);
+
+						break;
+					} else {
+						password = JOptionPane.showInputDialog(null, "비밀번호가 일치하지않습니다.");
+						System.out.println("비밀번호가 일치하지않습니다.");
+						if (j == 3) { // 3회 오류가 되면 뜨는 문구를 위한 if문
+							password = JOptionPane.showInputDialog(null, "비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
+							System.out.println("비밀번호가 3회 오류되어서 10분후에 사용이 가능합니다.");
 						}
 					}
+				}
 
-					
-					System.out.println(person.getName() + "님" + balance + "을 출금하였습니다");
-					System.out.println(person.getName() + "님의 남은 잔액은" + person.getMoney() + "입니다");
+				System.out.println(person.getName() + "님" + balance + "을 출금하였습니다");
+				System.out.println(person.getName() + "님의 남은 잔액은" + person.getMoney() + "입니다");
 
-					System.out.println(person.getName() + "님께서" + inputperson.getName() + "님에게" + balance + "을 입금하였습니다");
-					System.out.println(inputperson.getName() + "님의 남은 잔액은" + inputperson.getMoney() + "입니다");
-			
-		}
-			
+				System.out.println(person.getName() + "님께서" + inputperson.getName() + "님에게" + balance + "을 입금하였습니다");
+				System.out.println(inputperson.getName() + "님의 남은 잔액은" + inputperson.getMoney() + "입니다");
+
+			}
+
 		} catch (Exception e2) {
 			// TODO: handle exception
 			e2.printStackTrace();
@@ -253,8 +277,8 @@ public class Bankservice {
 			try {
 				if (Pre_person != null)
 					Pre_person.close();
-			//	if (bankConnection != null)
-				//	bankConnection.close();
+				// if (bankConnection != null)
+				// bankConnection.close();
 			} catch (Exception e3) {
 				// TODO: handle exception
 				e3.printStackTrace();
